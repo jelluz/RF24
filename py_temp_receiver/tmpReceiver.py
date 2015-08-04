@@ -55,7 +55,6 @@ radio.startListening()
 
 filename = os.path.join("/home",'pi',"temperature_log.txt")
 
-
 # forever loop
 while 1:
     # Pong back role.  Receive each packet, dump it out, and send it back
@@ -66,24 +65,15 @@ while 1:
             # Fetch the payload, and see if this was the last one.
             len = radio.getDynamicPayloadSize()
             receive_payload = radio.read(len)
-            print repr(receive_payload),"bla"
             t_str = receive_payload.split("\x00")[0]
-            print repr(t_str)
             try:
                 tmp = float(t_str)/1000.0
             except:
                 tmp = -999
-            #print repr(a[0])
-            #tmp= float(a[0])
-            #tmp = float(receive_payload[:-1])/1000.0          
-
             # Spew it
-            print 'Got payload size=', len, ' value="', tmp, '"'
+	    print 'received tmp:',tmp
             # save it
             with open(filename,'a') as fp:
                 fp.write("{} {}\n".format(time.time(),tmp))
                 
-        # First, stop listening so we can talk
-        radio.stopListening()        
-        radio.startListening()
 

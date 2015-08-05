@@ -16,16 +16,6 @@ import os
 
 # CE Pin, CSN Pin, SPI Speed
 
-# Setup for GPIO 22 CE and GPIO 25 CSN with SPI Speed @ 1Mhz
-#radio = RF24(RPI_V2_GPIO_P1_22, RPI_V2_GPIO_P1_18, BCM2835_SPI_SPEED_1MHZ)
-
-# Setup for GPIO 22 CE and CE0 CSN with SPI Speed @ 4Mhz
-#radio = RF24(RPI_V2_GPIO_P1_15, BCM2835_SPI_CS0, BCM2835_SPI_SPEED_4MHZ)
-
-#RPi B
-# Setup for GPIO 15 CE and CE1 CSN with SPI Speed @ 8Mhz
-#radio = RF24(RPI_V2_GPIO_P1_15, BCM2835_SPI_CS0, BCM2835_SPI_SPEED_8MHZ)
-
 #RPi B+
 # Setup for GPIO 22 CE and CE0 CSN for RPi B+ with SPI Speed @ 8Mhz
 #radio = RF24(RPI_BPLUS_GPIO_J8_22, RPI_BPLUS_GPIO_J8_24, BCM2835_SPI_SPEED_8MHZ)
@@ -34,21 +24,14 @@ radio = RF24.RF24(RF24.RPI_V2_GPIO_P1_22, RF24.RPI_V2_GPIO_P1_24, RF24.BCM2835_S
 ##########################################
 
 pipes = [0xF0F0F0F0E1, 0xF0F0F0F0D2]
-min_payload_size = 4
-max_payload_size = 32
-payload_size_increments_by = 1
-next_payload_size = min_payload_size
-inp_role = 'none'
 send_payload = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ789012'
-millis = lambda: int(round(time.time() * 1000))
 
-print 'pyRF24/examples/pingpair_dyn/'
 radio.begin()
 radio.enableDynamicPayloads()
 radio.setRetries(5,15)
 radio.printDetails()
+print "going to log some temperature now :)"
 
-print 'Role: Pong Back, awaiting transmission'
 radio.openWritingPipe(pipes[1])
 radio.openReadingPipe(1,pipes[0])
 radio.startListening()

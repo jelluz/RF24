@@ -13,13 +13,13 @@
 #
 prefix := /usr/local
 
-# Detect the Raspberry Pi by the existence of the bcm_host.h file
-BCMLOC=/opt/vc/include/bcm_host.h
-
 ARCH=armv6zk
 ifeq "$(shell uname -m)" "armv7l"
 ARCH=armv7-a
 endif
+
+# Detect the Raspberry Pi by the existence of the bcm_host.h file
+BCMLOC=/opt/vc/include/bcm_host.h
 
 ifneq ("$(wildcard $(BCMLOC))","")
 # The recommended compiler flags for the Raspberry Pi
@@ -28,7 +28,7 @@ endif
 
 # define all programs
 #PROGRAMS = scanner pingtest gettingstarted
-PROGRAMS = gettingstarted gettingstarted_call_response transfer pingpair_dyn
+PROGRAMS = gettingstarted_call_response_int gettingstarted_call_response_int2 transfer_interrupt pingpair_dyn_int
 SOURCES = ${PROGRAMS:=.cpp}
 
 all: ${PROGRAMS}

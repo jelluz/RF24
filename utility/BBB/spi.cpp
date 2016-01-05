@@ -25,7 +25,7 @@ void SPI::begin(int busNo){
     }
 
 	//RPi:
-	/*  if(!busNo){
+	  /*if(!busNo){
 	    this->device = "/dev/spidev0.0";;
 	  }else{
 	    this->device = "/dev/spidev0.1";;
@@ -47,8 +47,14 @@ void SPI::begin(int busNo){
 void SPI::init()
 {
 	int ret;
+    
+    if(this->fd > 0) {
+        close(this->fd);
+    }
+    
 	this->fd = open(this->device.c_str(), O_RDWR);
-	if (this->fd < 0)
+	
+    if (this->fd < 0)
 	{
 		perror("can't open device");
 		abort();
@@ -110,7 +116,8 @@ uint8_t SPI::transfer(uint8_t tx_)
 	int ret;
   	uint8_t tx[1] = {tx_};
 	uint8_t rx[1];
-
+     
+    this->init();
 	struct spi_ioc_transfer tr = {
 	tr.tx_buf = (unsigned long)&tx[0],
 	tr.rx_buf = (unsigned long)&rx[0],
@@ -151,7 +158,7 @@ void SPI::transfernb(char* tbuf, char* rbuf, uint32_t len)
 {
 	
 	int ret;
-	
+	this->init();
 	struct spi_ioc_transfer tr = {
 		tr.tx_buf = (unsigned long)tbuf,
 		tr.rx_buf = (unsigned long)rbuf,

@@ -4,7 +4,7 @@ TMRh20 2014 - Updated to work with optimized RF24 Arduino library
 
 
 /**
- * Example for efficient call-response using ack-payloads
+ * Example for efficient call-response using ack-payloads and interrupts
  *
  * This example continues to make use of all the normal functionality of the radios including
  * the auto-ack and auto-retry features, but allows ack-payloads to be written optionlly as well.
@@ -28,61 +28,42 @@ using namespace std;
 
 /****************** Raspberry Pi ***********************/
 
-// Radio CE Pin, CSN Pin, SPI Speed
-// See http://www.airspayce.com/mikem/bcm2835/group__constants.html#ga63c029bd6500167152db4e57736d0939 and the related enumerations for pin information.
-
-// Setup for GPIO 22 CE and CE0 CSN with SPI Speed @ 4Mhz
-//RF24 radio(RPI_V2_GPIO_P1_22, BCM2835_SPI_CS0, BCM2835_SPI_SPEED_4MHZ);
-
-// NEW: Setup for RPi B+
-//RF24 radio(RPI_BPLUS_GPIO_J8_15,RPI_BPLUS_GPIO_J8_24, BCM2835_SPI_SPEED_8MHZ);
-
-// Setup for GPIO 15 CE and CE0 CSN with SPI Speed @ 8Mhz
-RF24 radio(RPI_V2_GPIO_P1_15, RPI_V2_GPIO_P1_24, BCM2835_SPI_SPEED_8MHZ);
-
-/*** RPi Alternate ***/
-//Note: Specify SPI BUS 0 or 1 instead of CS pin number.
-// See http://tmrh20.github.io/RF24/RPi.html for more information on usage
-
-//RPi Alternate, with MRAA
-//RF24 radio(15,0);
-
-//RPi Alternate, with SPIDEV - Note: Edit RF24/arch/BBB/spi.cpp and  set 'this->device = "/dev/spidev0.0";;' or as listed in /dev
-//RF24 radio(22,0);
-
-
-/****************** Linux (BBB,x86,etc) ***********************/
-
-// See http://tmrh20.github.io/RF24/pages.html for more information on usage
-// See http://iotdk.intel.com/docs/master/mraa/ for more information on MRAA
-// See https://www.kernel.org/doc/Documentation/spi/spidev for more information on SPIDEV
-
-// Setup for ARM(Linux) devices like BBB using spidev (default is "/dev/spidev1.0" )
-//RF24 radio(115,0);
-
-//BBB Alternate, with mraa
-// CE pin = (Header P9, Pin 13) = 59 = 13 + 46 
-//Note: Specify SPI BUS 0 or 1 instead of CS pin number. 
-//RF24 radio(59,0);
+RF24 radio(22,0); //GPIO, SPI-BUS
 
 /********** User Config *********/
 // Assign a unique identifier for this node, 0 or 1. Arduino example uses radioNumber 0 by default.
 bool radioNumber = 1;
-
+int interruptPin = 23;
 /********************************/
 
 
 // Radio pipe addresses for the 2 nodes to communicate.
 const uint8_t addresses[][6] = {"1Node","2Node"};
 
-bool role_ping_out = 1, role_pong_back = 0, role = 0;
+volatile bool role_ping_out = 1, role_pong_back = 0, role = 0;
 uint8_t counter = 1;                                                          // A single byte to keep track of the data being sent back and forth
 
+volatile bool gotResponse = false;
+
+void intHandler(){
+    
+  if ( role == role_pong_back ) {
+    uint8_t pipeNo, gotByte;           		        // Declare variables for the pipe and the byte received
+    if( radio.available(&pipeNo)){               	// Read all available payloads      
+      radio.read( &gotByte, 1 );
+													// Since this is a call-response. Respond directly with an ack payload.
+	  gotByte += 1;  								// Ack payloads are much more efficient than switching to transmit mode to respond to a call
+	  radio.writeAckPayload(pipeNo,&gotByte, 1 );   // This can be commented out to send empty payloads.	  
+      printf("Loaded next response %d \n\r", gotByte);
+   
+    }
+  }    
+}
 
 int main(int argc, char** argv){
 
 
-  cout << "RPi/RF24/examples/gettingstarted_call_response\n";
+  cout << "RPi/RF24/examples/gettingstarted_call_response_int\n";
   radio.begin();
   radio.enableAckPayload();               // Allow optional ack payloads
   radio.enableDynamicPayloads();
@@ -117,7 +98,10 @@ int main(int argc, char** argv){
     }
 	radio.startListening();
 	radio.writeAckPayload(1,&counter,1);
-
+    
+    radio.maskIRQ(1,1,0); //Mask tx_ok & tx_fail interrupts
+    attachInterrupt(interruptPin, INT_EDGE_FALLING, intHandler); //Attach interrupt to bcm pin 23
+    
 // forever loop
 while (1){
 
@@ -136,6 +120,7 @@ while (1){
         if(!radio.available()){                             // If nothing in the buffer, we got an ack but it is blank
             printf("Got blank response. round-trip delay: %lu ms\n\r",millis()-time);
         }else{
+            
             while(radio.available() ){                      // If an ack with payload was received
                 radio.read( &gotByte, 1 );                  // Read it, and display the response time
                 printf("Got response %d, round-trip delay: %lu ms\n\r",gotByte,millis()-time);
@@ -150,18 +135,7 @@ while (1){
 
 /****************** Pong Back Role ***************************/
 
-  if ( role == role_pong_back ) {
-    uint8_t pipeNo, gotByte;           		        // Declare variables for the pipe and the byte received
-    if( radio.available(&pipeNo)){               	// Read all available payloads      
-      radio.read( &gotByte, 1 );
-													// Since this is a call-response. Respond directly with an ack payload.
-	  gotByte += 1;  								// Ack payloads are much more efficient than switching to transmit mode to respond to a call
-	  radio.writeAckPayload(pipeNo,&gotByte, 1 );   // This can be commented out to send empty payloads.	  
-      printf("Loaded next response %d \n\r", gotByte);
-	  delay(900); //Delay after a response to minimize CPU usage on RPi
-				  //Expects a payload every second      
-   }
- }
+
 
 } //while 1
 } //main

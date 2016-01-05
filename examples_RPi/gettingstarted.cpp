@@ -23,6 +23,7 @@ TMRh20 2014 - Updated to work with optimized RF24 Arduino library
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 #include <RF24/RF24.h>
 
 using namespace std;
@@ -87,7 +88,7 @@ int main(int argc, char** argv){
   bool role_ping_out = true, role_pong_back = false;
   bool role = role_pong_back;
 
-  printf("RF24/examples/GettingStarted/\n");
+  cout << "RF24/examples/GettingStarted/\n";
 
   // Setup and configure rf radio
   radio.begin();
